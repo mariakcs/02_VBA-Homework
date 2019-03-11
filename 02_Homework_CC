@@ -1,0 +1,126 @@
+Sub volume()
+'Declaring variables
+Dim ticker As String
+Dim volume As Double
+Dim j As Long
+Dim ws As Worksheet
+
+For Each ws In Worksheets
+    ws.Activate
+
+Dim open_value, close_value, yearly_change, percent_change As Double
+volume = 0
+open_value = Cells(2, 3).Value
+last_row = Cells(Rows.Count, 1).End(xlUp).Row
+
+'Locating variables to summary table
+Dim summary As Long
+summary = 2 'Avoid overwriting labels of table
+Range("I1") = ("Ticker")
+Range("L1") = ("Total Stock Volume")
+Range("J1") = ("Yearly change") 'for moderate dificulty
+Range("K1") = ("Percent change") 'for moderate dificulty
+
+
+'Iteration easy part, setting the total volume in a sumary table
+For i = 2 To last_row
+    If Cells(i + 1, 1).Value <> Cells(i, 1).Value Then
+        ticker = Cells(i, 1).Value 'setting the ticker
+        volume = volume + Cells(i, 7).Value 'setting the volume per ticker
+        Range("I" & summary) = ticker  'adding values to corresponding cells
+        Range("L" & summary) = volume
+        summary = summary + 1 'coping in the next row the next value
+        volume = 0 'reseting value
+    Else
+    volume = volume + Cells(i, 7).Value
+    End If
+Next i
+
+'Iteration moderate part, setting yearly change and percent change
+summary = 2
+For i = 3 To (last_row - 1) 'set at 3 and last_row minus one to take into account the corner cases
+    If Cells(i + 1, 1).Value <> Cells(i, 1).Value Then
+        close_value = Cells(i, 6).Value
+        yearly_change = close_value - open_value
+        percent_change = yearly_change / (open_value) '+ 1E-30 'overflow error corrected by adding a small number to open value fixed with the while loop
+        Range("J" & summary) = yearly_change  'adding values to corresponding cells
+        Range("K" & summary) = percent_change
+        Range("K" & summary) = Format(percent_change, "Percent")
+        summary = summary + 1 'Copying in the next row the next value
+        open_value = Cells(i + 1, 3).Value 'open value of the next ticker
+        j = i
+        If open_value = 0 Then 'fixing 0 open values that were causing the overflow error
+            While open_value = 0
+                j = j + 1
+                open_value = Cells(j, 3).Value
+            Wend
+        End If
+    End If
+Next i
+'Calculating values for the last value left out in the interation above.
+close_value = Cells(last_row, 6).Value
+yearly_change = close_value - open_value
+percent_change = yearly_change / (open_value)
+
+ 'adding values to corresponding cells
+Range("J" & summary) = yearly_change
+Range("K" & summary) = percent_change
+summary = summary + 1 'coping in the next row the next value
+
+
+
+'Iteration hard part, setting greatest %increase, decrease and total volume
+
+Dim min_nr, max_nr As Double
+Dim max_tot As Double
+
+
+min_nr = Cells(2, 11) 'To compare with the first value and assign accordingly
+max_nr = Cells(2, 11)
+max_tot = Cells(2, 12)
+
+'Assigning tittles to the third table "Greatest values"
+Range("O2") = "Greatest % Increase"
+Range("O3") = "Greatest % Decrease"
+Range("O4") = "Greatest Total Volume"
+Range("P1") = "Ticker"
+Range("Q1") = "Value"
+
+
+For i = 2 To 3005
+ 'Formating yearly change to coloring the cell
+If Cells(i, 10).Value > 0 Then
+Cells(i, 10).Interior.ColorIndex = 4
+Else
+Cells(i, 10).Interior.ColorIndex = 3
+End If
+        
+'Setting greatest values
+If max_nr < Cells(i, 11) Then 'Greatest percent increase
+    max_nr = Cells(i, 11)
+    Range("Q2") = max_nr
+    Range("P2") = Cells(i, 9)
+    Range("Q2") = Format(max_nr, "Percent")
+End If
+
+If min_nr > Cells(i, 11) Then 'Greatest percent decrease
+    min_nr = Cells(i, 11)
+    Range("Q3") = min_nr
+    Range("P3") = Cells(i, 9)
+    Range("Q3") = Format(min_nr, "Percent")
+End If
+
+If max_tot < Cells(i, 12) Then 'Greatest Total volume
+    max_tot = Cells(i, 12)
+    Range("Q4") = max_tot
+    Range("P4") = Cells(i, 9)
+End If
+Next i
+Next ws
+End Sub
+
+
+
+
+
+
